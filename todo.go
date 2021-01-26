@@ -13,12 +13,24 @@ type Todo struct {
 	Done bool   `json:"done"`
 }
 
-func storePath() (string, error) {
+func defaultStorePath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(home, ".go-cli-todo.json"), nil
+}
+
+const storeEnvVar = "TODO_STORE"
+
+func resolveStorePath(flagVal string) (string, error) {
+	if flagVal != "" {
+		return flagVal, nil
+	}
+	if env := os.Getenv(storeEnvVar); env != "" {
+		return env, nil
+	}
+	return defaultStorePath()
 }
 
 func loadTodos(path string) ([]Todo, error) {

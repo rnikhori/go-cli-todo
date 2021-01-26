@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -8,7 +9,10 @@ import (
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `usage: todo <command> [arguments]
+	fmt.Fprintln(os.Stderr, `usage: todo [--store path] <command> [arguments]
+
+global options:
+  --store path   path to the todo storage file (overrides TODO_STORE env var)
 
 commands:
   add <text>   add a new todo
@@ -18,18 +22,26 @@ commands:
 }
 
 func run() error {
-	if len(os.Args) < 2 {
+	fs := flag.NewFlagSet("todo", flag.ContinueOnError)
+	fs.Usage = usage
+	storeFlag := fs.String("store", "", "path to the todo storage file")
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		return err
+	}
+
+	rest := fs.Args()
+	if len(rest) < 1 {
 		usage()
 		return fmt.Errorf("no command given")
 	}
 
-	path, err := storePath()
+	path, err := resolveStorePath(*storeFlag)
 	if err != nil {
 		return err
 	}
 
-	cmd := os.Args[1]
-	args := os.Args[2:]
+	cmd := rest[0]
+	args := rest[1:]
 
 	switch cmd {
 	case "add":
