@@ -15,10 +15,10 @@ global options:
   --store path   path to the todo storage file (overrides TODO_STORE env var)
 
 commands:
-  add <text>   add a new todo
-  list         list all todos
-  done <id>    mark a todo as done
-  rm <id>      remove a todo`)
+  add [--priority low|medium|high] <text>   add a new todo
+  list                                      list all todos
+  done <id>                                 mark a todo as done
+  rm <id>                                   remove a todo`)
 }
 
 func run() error {
@@ -45,15 +45,25 @@ func run() error {
 
 	switch cmd {
 	case "add":
-		if len(args) == 0 {
+		addFs := flag.NewFlagSet("add", flag.ContinueOnError)
+		priorityStr := addFs.String("priority", "medium", "priority: low, medium, or high")
+		if err := addFs.Parse(args); err != nil {
+			return err
+		}
+		textArgs := addFs.Args()
+		if len(textArgs) == 0 {
 			return fmt.Errorf("add requires text")
 		}
-		text := strings.Join(args, " ")
+		priority, err := ParsePriority(*priorityStr)
+		if err != nil {
+			return err
+		}
+		text := strings.Join(textArgs, " ")
 		todos, err := loadTodos(path)
 		if err != nil {
 			return err
 		}
-		todo := Todo{ID: nextID(todos), Text: text}
+		todo := Todo{ID: nextID(todos), Text: text, Priority: priority}
 		todos = append(todos, todo)
 		if err := saveTodos(path, todos); err != nil {
 			return err
@@ -74,7 +84,7 @@ func run() error {
 			if t.Done {
 				mark = "x"
 			}
-			fmt.Printf("[%s] %d: %s\n", mark, t.ID, t.Text)
+			fmt.Printf("[%s] %d (%s): %s\n", mark, t.ID, t.EffectivePriority(), t.Text)
 		}
 
 	case "done":
