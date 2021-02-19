@@ -60,6 +60,15 @@ func saveTodos(path string, todos []Todo) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+func findByID(todos []Todo, id int) int {
+	for i := range todos {
+		if todos[i].ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
 func nextID(todos []Todo) int {
 	max := 0
 	for _, t := range todos {

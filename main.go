@@ -17,6 +17,7 @@ global options:
 commands:
   add [--priority low|medium|high] <text>   add a new todo
   list                                      list all todos
+  edit <id> <text>                          change a todo's text
   done <id>                                 mark a todo as done
   rm <id>                                   remove a todo`)
 }
@@ -99,21 +100,38 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		found := false
-		for i := range todos {
-			if todos[i].ID == id {
-				todos[i].Done = true
-				found = true
-				break
-			}
-		}
-		if !found {
+		idx := findByID(todos, id)
+		if idx == -1 {
 			return fmt.Errorf("no todo with id %d", id)
 		}
+		todos[idx].Done = true
 		if err := saveTodos(path, todos); err != nil {
 			return err
 		}
 		fmt.Printf("marked todo %d done\n", id)
+
+	case "edit":
+		if len(args) < 2 {
+			return fmt.Errorf("edit requires an id and new text")
+		}
+		id, err := strconv.Atoi(args[0])
+		if err != nil {
+			return fmt.Errorf("invalid id: %s", args[0])
+		}
+		text := strings.Join(args[1:], " ")
+		todos, err := loadTodos(path)
+		if err != nil {
+			return err
+		}
+		idx := findByID(todos, id)
+		if idx == -1 {
+			return fmt.Errorf("no todo with id %d", id)
+		}
+		todos[idx].Text = text
+		if err := saveTodos(path, todos); err != nil {
+			return err
+		}
+		fmt.Printf("updated todo %d: %s\n", id, text)
 
 	case "rm":
 		if len(args) != 1 {
@@ -127,13 +145,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		idx := -1
-		for i := range todos {
-			if todos[i].ID == id {
-				idx = i
-				break
-			}
-		}
+		idx := findByID(todos, id)
 		if idx == -1 {
 			return fmt.Errorf("no todo with id %d", id)
 		}
