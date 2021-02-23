@@ -41,9 +41,10 @@ func run() error {
 		return err
 	}
 
-	cmd := rest[0]
-	args := rest[1:]
+	return dispatch(rest[0], rest[1:], path)
+}
 
+func dispatch(cmd string, args []string, path string) error {
 	switch cmd {
 	case "add":
 		addFs := flag.NewFlagSet("add", flag.ContinueOnError)
