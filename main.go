@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func usage() {
@@ -65,7 +66,7 @@ func dispatch(cmd string, args []string, path string) error {
 		if err != nil {
 			return err
 		}
-		todo := Todo{ID: nextID(todos), Text: text, Priority: priority}
+		todo := Todo{ID: nextID(todos), Text: text, Priority: priority, CreatedAt: time.Now()}
 		todos = append(todos, todo)
 		if err := saveTodos(path, todos); err != nil {
 			return err

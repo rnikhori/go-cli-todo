@@ -5,13 +5,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Todo struct {
-	ID       int      `json:"id"`
-	Text     string   `json:"text"`
-	Done     bool     `json:"done"`
-	Priority Priority `json:"priority,omitempty"`
+	ID        int       `json:"id"`
+	Text      string    `json:"text"`
+	Done      bool      `json:"done"`
+	Priority  Priority  `json:"priority,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 
 func defaultStorePath() (string, error) {
