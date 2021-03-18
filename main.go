@@ -87,12 +87,20 @@ func dispatch(cmd string, args []string, path string) error {
 			fmt.Println("no todos")
 			return nil
 		}
+		now := time.Now()
 		for _, t := range todos {
 			mark := " "
 			if t.Done {
 				mark = "x"
 			}
-			fmt.Printf("[%s] %d (%s): %s\n", mark, t.ID, t.EffectivePriority(), t.Text)
+			line := fmt.Sprintf("[%s] %d (%s): %s", mark, t.ID, t.EffectivePriority(), t.Text)
+			if t.Due != nil {
+				line += fmt.Sprintf(" (due %s)", t.Due.Format(dueDateLayout))
+			}
+			if t.IsOverdue(now) {
+				line += " [OVERDUE]"
+			}
+			fmt.Println(line)
 		}
 
 	case "done":
