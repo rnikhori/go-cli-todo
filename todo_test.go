@@ -48,7 +48,7 @@ func TestSaveAndLoadTodos(t *testing.T) {
 		t.Fatalf("loadTodos returned %d todos, want %d", len(got), len(want))
 	}
 	for i := range want {
-		if got[i] != want[i] {
+		if got[i].ID != want[i].ID || got[i].Text != want[i].Text || got[i].Done != want[i].Done {
 			t.Errorf("todo %d = %+v, want %+v", i, got[i], want[i])
 		}
 	}

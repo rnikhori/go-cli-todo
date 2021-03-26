@@ -16,7 +16,7 @@ global options:
   --store path   path to the todo storage file (overrides TODO_STORE env var)
 
 commands:
-  add [--priority low|medium|high] [--due YYYY-MM-DD] <text>   add a new todo
+  add [--priority low|medium|high] [--due YYYY-MM-DD] [--tag t]... <text>   add a new todo
   list                                      list all todos
   edit <id> <text>                          change a todo's text
   done <id>                                 mark a todo as done
@@ -51,6 +51,8 @@ func dispatch(cmd string, args []string, path string) error {
 		addFs := flag.NewFlagSet("add", flag.ContinueOnError)
 		priorityStr := addFs.String("priority", "medium", "priority: low, medium, or high")
 		dueStr := addFs.String("due", "", "due date in YYYY-MM-DD format")
+		var tags stringList
+		addFs.Var(&tags, "tag", "tag to attach to the todo (repeatable)")
 		if err := addFs.Parse(args); err != nil {
 			return err
 		}
@@ -71,7 +73,14 @@ func dispatch(cmd string, args []string, path string) error {
 		if err != nil {
 			return err
 		}
-		todo := Todo{ID: nextID(todos), Text: text, Priority: priority, CreatedAt: time.Now(), Due: due}
+		todo := Todo{
+			ID:        nextID(todos),
+			Text:      text,
+			Priority:  priority,
+			CreatedAt: time.Now(),
+			Due:       due,
+			Tags:      normalizeTags(tags),
+		}
 		todos = append(todos, todo)
 		if err := saveTodos(path, todos); err != nil {
 			return err
