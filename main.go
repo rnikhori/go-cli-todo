@@ -109,6 +109,9 @@ func dispatch(cmd string, args []string, path string) error {
 			if t.IsOverdue(now) {
 				line += " [OVERDUE]"
 			}
+			if len(t.Tags) > 0 {
+				line += fmt.Sprintf(" #%s", strings.Join(t.Tags, " #"))
+			}
 			fmt.Println(line)
 		}
 
