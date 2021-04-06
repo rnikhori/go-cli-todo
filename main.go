@@ -17,7 +17,7 @@ global options:
 
 commands:
   add [--priority low|medium|high] [--due YYYY-MM-DD] [--tag t]... <text>   add a new todo
-  list                                      list all todos
+  list [--tag t]                            list todos, optionally filtered by tag
   edit <id> <text>                          change a todo's text
   done <id>                                 mark a todo as done
   rm <id>                                   remove a todo`)
@@ -88,9 +88,23 @@ func dispatch(cmd string, args []string, path string) error {
 		fmt.Printf("added todo %d: %s\n", todo.ID, todo.Text)
 
 	case "list":
+		listFs := flag.NewFlagSet("list", flag.ContinueOnError)
+		tagFilter := listFs.String("tag", "", "only show todos with this tag")
+		if err := listFs.Parse(args); err != nil {
+			return err
+		}
 		todos, err := loadTodos(path)
 		if err != nil {
 			return err
+		}
+		if *tagFilter != "" {
+			filtered := todos[:0:0]
+			for _, t := range todos {
+				if hasTag(t.Tags, *tagFilter) {
+					filtered = append(filtered, t)
+				}
+			}
+			todos = filtered
 		}
 		if len(todos) == 0 {
 			fmt.Println("no todos")
