@@ -1,13 +1,39 @@
 package main
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func tempStore(t *testing.T) string {
 	t.Helper()
 	return filepath.Join(t.TempDir(), "todos.json")
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	os.Stdout = w
+	defer func() { os.Stdout = old }()
+
+	fn()
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close pipe writer: %v", err)
+	}
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("failed to read pipe: %v", err)
+	}
+	return buf.String()
 }
 
 func TestDispatchAddCreatesTodo(t *testing.T) {
@@ -92,6 +118,29 @@ func TestDispatchRmRemovesTodo(t *testing.T) {
 	}
 	if len(todos) != 0 {
 		t.Errorf("got %d todos after rm, want 0", len(todos))
+	}
+}
+
+func TestDispatchListTagFilter(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"--tag", "work", "task one"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("add", []string{"--tag", "home", "task two"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	out := captureStdout(t, func() {
+		if err := dispatch("list", []string{"--tag", "work"}, path); err != nil {
+			t.Fatalf("dispatch list returned error: %v", err)
+		}
+	})
+
+	if !strings.Contains(out, "task one") {
+		t.Errorf("output %q should contain %q", out, "task one")
+	}
+	if strings.Contains(out, "task two") {
+		t.Errorf("output %q should not contain %q", out, "task two")
 	}
 }
 
