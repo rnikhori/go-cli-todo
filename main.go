@@ -17,7 +17,7 @@ global options:
 
 commands:
   add [--priority low|medium|high] [--due YYYY-MM-DD] [--tag t]... <text>   add a new todo
-  list [--tag t] [--search text]            list todos, optionally filtered by tag/text
+  list [--tag t] [--search text] [--sort k]   list todos, optionally filtered/sorted
   edit <id> <text>                          change a todo's text
   done <id>                                 mark a todo as done
   rm <id>                                   remove a todo`)
@@ -91,6 +91,7 @@ func dispatch(cmd string, args []string, path string) error {
 		listFs := flag.NewFlagSet("list", flag.ContinueOnError)
 		tagFilter := listFs.String("tag", "", "only show todos with this tag")
 		searchFilter := listFs.String("search", "", "only show todos whose text contains this substring (case-insensitive)")
+		sortBy := listFs.String("sort", "", "sort by: priority")
 		if err := listFs.Parse(args); err != nil {
 			return err
 		}
@@ -116,6 +117,9 @@ func dispatch(cmd string, args []string, path string) error {
 				}
 			}
 			todos = filtered
+		}
+		if err := sortTodos(todos, *sortBy); err != nil {
+			return err
 		}
 		if len(todos) == 0 {
 			fmt.Println("no todos")
