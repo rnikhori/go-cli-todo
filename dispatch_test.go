@@ -144,6 +144,46 @@ func TestDispatchListTagFilter(t *testing.T) {
 	}
 }
 
+func TestDispatchListSearchFilter(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"buy", "milk"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("add", []string{"write", "report"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	out := captureStdout(t, func() {
+		if err := dispatch("list", []string{"--search", "MILK"}, path); err != nil {
+			t.Fatalf("dispatch list returned error: %v", err)
+		}
+	})
+
+	if !strings.Contains(out, "buy milk") {
+		t.Errorf("output %q should contain %q", out, "buy milk")
+	}
+	if strings.Contains(out, "write report") {
+		t.Errorf("output %q should not contain %q", out, "write report")
+	}
+}
+
+func TestDispatchListSearchNoMatches(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"buy", "milk"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	out := captureStdout(t, func() {
+		if err := dispatch("list", []string{"--search", "nothing-matches"}, path); err != nil {
+			t.Fatalf("dispatch list returned error: %v", err)
+		}
+	})
+
+	if !strings.Contains(out, "no todos") {
+		t.Errorf("output %q should report no todos", out)
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
