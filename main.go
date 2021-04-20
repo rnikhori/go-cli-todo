@@ -91,7 +91,7 @@ func dispatch(cmd string, args []string, path string) error {
 		listFs := flag.NewFlagSet("list", flag.ContinueOnError)
 		tagFilter := listFs.String("tag", "", "only show todos with this tag")
 		searchFilter := listFs.String("search", "", "only show todos whose text contains this substring (case-insensitive)")
-		sortBy := listFs.String("sort", "", "sort by: priority")
+		sortBy := listFs.String("sort", "", "sort by: priority, created, or due")
 		if err := listFs.Parse(args); err != nil {
 			return err
 		}
