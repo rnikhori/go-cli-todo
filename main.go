@@ -17,7 +17,7 @@ global options:
 
 commands:
   add [--priority low|medium|high] [--due YYYY-MM-DD] [--tag t]... <text>   add a new todo
-  list [--tag t] [--search text] [--sort k]   list todos, optionally filtered/sorted
+  list [--tag t] [--search text] [--sort k] [--no-color]   list todos
   edit <id> <text>                          change a todo's text
   done <id>                                 mark a todo as done
   rm <id>                                   remove a todo`)
@@ -92,6 +92,7 @@ func dispatch(cmd string, args []string, path string) error {
 		tagFilter := listFs.String("tag", "", "only show todos with this tag")
 		searchFilter := listFs.String("search", "", "only show todos whose text contains this substring (case-insensitive)")
 		sortBy := listFs.String("sort", "", "sort by: priority, created, or due")
+		noColor := listFs.Bool("no-color", false, "disable colored output")
 		if err := listFs.Parse(args); err != nil {
 			return err
 		}
@@ -126,20 +127,22 @@ func dispatch(cmd string, args []string, path string) error {
 			return nil
 		}
 		now := time.Now()
+		useColor := colorEnabled(*noColor)
 		for _, t := range todos {
 			mark := " "
 			if t.Done {
-				mark = "x"
+				mark = colorize(useColor, ansiGreen, "x")
 			}
-			line := fmt.Sprintf("[%s] %d (%s): %s", mark, t.ID, t.EffectivePriority(), t.Text)
+			priorityText := colorize(useColor, priorityColor(t.EffectivePriority()), string(t.EffectivePriority()))
+			line := fmt.Sprintf("[%s] %d (%s): %s", mark, t.ID, priorityText, t.Text)
 			if t.Due != nil {
 				line += fmt.Sprintf(" (due %s)", t.Due.Format(dueDateLayout))
 			}
 			if t.IsOverdue(now) {
-				line += " [OVERDUE]"
+				line += colorize(useColor, ansiBold+ansiRed, " [OVERDUE]")
 			}
 			if len(t.Tags) > 0 {
-				line += fmt.Sprintf(" #%s", strings.Join(t.Tags, " #"))
+				line += colorize(useColor, ansiCyan, fmt.Sprintf(" #%s", strings.Join(t.Tags, " #")))
 			}
 			fmt.Println(line)
 		}
