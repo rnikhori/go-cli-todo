@@ -109,7 +109,7 @@ func TestDispatchRmRemovesTodo(t *testing.T) {
 	if err := dispatch("add", []string{"task"}, path); err != nil {
 		t.Fatalf("setup add failed: %v", err)
 	}
-	if err := dispatch("rm", []string{"1"}, path); err != nil {
+	if err := dispatch("rm", []string{"--force", "1"}, path); err != nil {
 		t.Fatalf("dispatch rm returned error: %v", err)
 	}
 	todos, err := loadTodos(path)

@@ -20,7 +20,7 @@ commands:
   list [--tag t] [--search text] [--sort k] [--no-color]   list todos
   edit <id> <text>                          change a todo's text
   done <id>                                 mark a todo as done
-  rm <id>                                   remove a todo`)
+  rm [--force] <id>                         remove a todo (prompts unless --force)`)
 }
 
 func run() error {
@@ -193,12 +193,18 @@ func dispatch(cmd string, args []string, path string) error {
 		fmt.Printf("updated todo %d: %s\n", id, text)
 
 	case "rm":
-		if len(args) != 1 {
+		rmFs := flag.NewFlagSet("rm", flag.ContinueOnError)
+		force := rmFs.Bool("force", false, "skip the confirmation prompt")
+		if err := rmFs.Parse(args); err != nil {
+			return err
+		}
+		rmArgs := rmFs.Args()
+		if len(rmArgs) != 1 {
 			return fmt.Errorf("rm requires exactly one id")
 		}
-		id, err := strconv.Atoi(args[0])
+		id, err := strconv.Atoi(rmArgs[0])
 		if err != nil {
-			return fmt.Errorf("invalid id: %s", args[0])
+			return fmt.Errorf("invalid id: %s", rmArgs[0])
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
@@ -207,6 +213,16 @@ func dispatch(cmd string, args []string, path string) error {
 		idx := findByID(todos, id)
 		if idx == -1 {
 			return fmt.Errorf("no todo with id %d", id)
+		}
+		if !*force {
+			ok, err := confirm(fmt.Sprintf("remove todo %d: %q?", id, todos[idx].Text))
+			if err != nil {
+				return err
+			}
+			if !ok {
+				fmt.Println("aborted")
+				return nil
+			}
 		}
 		todos = append(todos[:idx], todos[idx+1:]...)
 		if err := saveTodos(path, todos); err != nil {
