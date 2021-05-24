@@ -184,6 +184,52 @@ func TestDispatchListSearchNoMatches(t *testing.T) {
 	}
 }
 
+func TestDispatchRmPromptsAndAborts(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	withStdin(t, "n\n", func() {
+		captureStdout(t, func() {
+			if err := dispatch("rm", []string{"1"}, path); err != nil {
+				t.Fatalf("dispatch rm returned error: %v", err)
+			}
+		})
+	})
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 1 {
+		t.Errorf("expected todo to survive an aborted rm, got %d todos", len(todos))
+	}
+}
+
+func TestDispatchRmPromptsAndConfirms(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	withStdin(t, "y\n", func() {
+		captureStdout(t, func() {
+			if err := dispatch("rm", []string{"1"}, path); err != nil {
+				t.Fatalf("dispatch rm returned error: %v", err)
+			}
+		})
+	})
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 0 {
+		t.Errorf("expected todo to be removed after confirming, got %d todos", len(todos))
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
