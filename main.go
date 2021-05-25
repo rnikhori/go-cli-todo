@@ -19,7 +19,7 @@ commands:
   add [--priority low|medium|high] [--due YYYY-MM-DD] [--tag t]... <text>   add a new todo
   list [--tag t] [--search text] [--sort k] [--no-color]   list todos
   edit <id> <text>                          change a todo's text
-  done <id>                                 mark a todo as done
+  done <id> [id...]                         mark one or more todos as done
   rm [--force] <id>                         remove a todo (prompts unless --force)`)
 }
 
@@ -148,26 +148,25 @@ func dispatch(cmd string, args []string, path string) error {
 		}
 
 	case "done":
-		if len(args) != 1 {
-			return fmt.Errorf("done requires exactly one id")
-		}
-		id, err := strconv.Atoi(args[0])
+		ids, err := parseIDs(args)
 		if err != nil {
-			return fmt.Errorf("invalid id: %s", args[0])
+			return fmt.Errorf("done: %w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
 			return err
 		}
-		idx := findByID(todos, id)
-		if idx == -1 {
-			return fmt.Errorf("no todo with id %d", id)
+		for _, id := range ids {
+			idx := findByID(todos, id)
+			if idx == -1 {
+				return fmt.Errorf("no todo with id %d", id)
+			}
+			todos[idx].Done = true
 		}
-		todos[idx].Done = true
 		if err := saveTodos(path, todos); err != nil {
 			return err
 		}
-		fmt.Printf("marked todo %d done\n", id)
+		fmt.Printf("marked %d todo(s) done: %v\n", len(ids), ids)
 
 	case "edit":
 		if len(args) < 2 {
