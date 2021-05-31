@@ -19,3 +19,17 @@ func parseIDs(args []string) ([]int, error) {
 	}
 	return ids, nil
 }
+
+func removeByIDs(todos []Todo, ids []int) []Todo {
+	remove := make(map[int]bool, len(ids))
+	for _, id := range ids {
+		remove[id] = true
+	}
+	out := todos[:0:0]
+	for _, t := range todos {
+		if !remove[t.ID] {
+			out = append(out, t)
+		}
+	}
+	return out
+}

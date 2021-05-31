@@ -20,7 +20,7 @@ commands:
   list [--tag t] [--search text] [--sort k] [--no-color]   list todos
   edit <id> <text>                          change a todo's text
   done <id> [id...]                         mark one or more todos as done
-  rm [--force] <id>                         remove a todo (prompts unless --force)`)
+  rm [--force] <id> [id...]                 remove one or more todos (prompts unless --force)`)
 }
 
 func run() error {
@@ -197,24 +197,29 @@ func dispatch(cmd string, args []string, path string) error {
 		if err := rmFs.Parse(args); err != nil {
 			return err
 		}
-		rmArgs := rmFs.Args()
-		if len(rmArgs) != 1 {
-			return fmt.Errorf("rm requires exactly one id")
-		}
-		id, err := strconv.Atoi(rmArgs[0])
+		ids, err := parseIDs(rmFs.Args())
 		if err != nil {
-			return fmt.Errorf("invalid id: %s", rmArgs[0])
+			return fmt.Errorf("rm: %w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
 			return err
 		}
-		idx := findByID(todos, id)
-		if idx == -1 {
-			return fmt.Errorf("no todo with id %d", id)
+		toRemove := make([]Todo, 0, len(ids))
+		for _, id := range ids {
+			idx := findByID(todos, id)
+			if idx == -1 {
+				return fmt.Errorf("no todo with id %d", id)
+			}
+			toRemove = append(toRemove, todos[idx])
 		}
 		if !*force {
-			ok, err := confirm(fmt.Sprintf("remove todo %d: %q?", id, todos[idx].Text))
+			var summary strings.Builder
+			fmt.Fprintf(&summary, "remove %d todo(s)?", len(toRemove))
+			for _, t := range toRemove {
+				fmt.Fprintf(&summary, "\n  %d: %q", t.ID, t.Text)
+			}
+			ok, err := confirm(summary.String())
 			if err != nil {
 				return err
 			}
@@ -223,11 +228,11 @@ func dispatch(cmd string, args []string, path string) error {
 				return nil
 			}
 		}
-		todos = append(todos[:idx], todos[idx+1:]...)
+		todos = removeByIDs(todos, ids)
 		if err := saveTodos(path, todos); err != nil {
 			return err
 		}
-		fmt.Printf("removed todo %d\n", id)
+		fmt.Printf("removed %d todo(s): %v\n", len(ids), ids)
 
 	default:
 		usage()
