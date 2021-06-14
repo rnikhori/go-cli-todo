@@ -230,6 +230,88 @@ func TestDispatchRmPromptsAndConfirms(t *testing.T) {
 	}
 }
 
+func TestDispatchDoneBulkMarksAllComplete(t *testing.T) {
+	path := tempStore(t)
+	for _, text := range []string{"task one", "task two", "task three"} {
+		if err := dispatch("add", []string{text}, path); err != nil {
+			t.Fatalf("setup add failed: %v", err)
+		}
+	}
+
+	if err := dispatch("done", []string{"1", "3"}, path); err != nil {
+		t.Fatalf("dispatch done returned error: %v", err)
+	}
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if !todos[0].Done || todos[1].Done || !todos[2].Done {
+		t.Errorf("unexpected done states: %+v", todos)
+	}
+}
+
+func TestDispatchDoneUnknownIDLeavesStoreUnchanged(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("done", []string{"1", "99"}, path); err == nil {
+		t.Fatal("expected error for unknown id in bulk done")
+	}
+}
+
+func TestDispatchRmBulkWithForceRemovesAll(t *testing.T) {
+	path := tempStore(t)
+	for _, text := range []string{"task one", "task two", "task three"} {
+		if err := dispatch("add", []string{text}, path); err != nil {
+			t.Fatalf("setup add failed: %v", err)
+		}
+	}
+
+	if err := dispatch("rm", []string{"--force", "1", "3"}, path); err != nil {
+		t.Fatalf("dispatch rm returned error: %v", err)
+	}
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 1 || todos[0].ID != 2 {
+		t.Errorf("expected only todo 2 to remain, got %+v", todos)
+	}
+}
+
+func TestDispatchRmBulkConfirmationShowsAllIDs(t *testing.T) {
+	path := tempStore(t)
+	for _, text := range []string{"task one", "task two"} {
+		if err := dispatch("add", []string{text}, path); err != nil {
+			t.Fatalf("setup add failed: %v", err)
+		}
+	}
+
+	var out string
+	withStdin(t, "y\n", func() {
+		out = captureStdout(t, func() {
+			if err := dispatch("rm", []string{"1", "2"}, path); err != nil {
+				t.Fatalf("dispatch rm returned error: %v", err)
+			}
+		})
+	})
+
+	if !strings.Contains(out, "task one") || !strings.Contains(out, "task two") {
+		t.Errorf("expected confirmation to list both todos, got %q", out)
+	}
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 0 {
+		t.Errorf("expected both todos removed, got %+v", todos)
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
