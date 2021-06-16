@@ -20,7 +20,8 @@ commands:
   list [--tag t] [--search text] [--sort k] [--no-color]   list todos
   edit <id> <text>                          change a todo's text
   done <id> [id...]                         mark one or more todos as done
-  rm [--force] <id> [id...]                 remove one or more todos (prompts unless --force)`)
+  rm [--force] <id> [id...]                 remove one or more todos (prompts unless --force)
+  clear-completed [--force]                 remove all completed todos (prompts unless --force)`)
 }
 
 func run() error {
@@ -233,6 +234,52 @@ func dispatch(cmd string, args []string, path string) error {
 			return err
 		}
 		fmt.Printf("removed %d todo(s): %v\n", len(ids), ids)
+
+	case "clear-completed":
+		clearFs := flag.NewFlagSet("clear-completed", flag.ContinueOnError)
+		force := clearFs.Bool("force", false, "skip the confirmation prompt")
+		if err := clearFs.Parse(args); err != nil {
+			return err
+		}
+		todos, err := loadTodos(path)
+		if err != nil {
+			return err
+		}
+		var completed []Todo
+		for _, t := range todos {
+			if t.Done {
+				completed = append(completed, t)
+			}
+		}
+		if len(completed) == 0 {
+			fmt.Println("no completed todos to clear")
+			return nil
+		}
+		if !*force {
+			var summary strings.Builder
+			fmt.Fprintf(&summary, "clear %d completed todo(s)?", len(completed))
+			for _, t := range completed {
+				fmt.Fprintf(&summary, "\n  %d: %q", t.ID, t.Text)
+			}
+			ok, err := confirm(summary.String())
+			if err != nil {
+				return err
+			}
+			if !ok {
+				fmt.Println("aborted")
+				return nil
+			}
+		}
+		remaining := todos[:0:0]
+		for _, t := range todos {
+			if !t.Done {
+				remaining = append(remaining, t)
+			}
+		}
+		if err := saveTodos(path, remaining); err != nil {
+			return err
+		}
+		fmt.Printf("cleared %d completed todo(s)\n", len(completed))
 
 	default:
 		usage()
