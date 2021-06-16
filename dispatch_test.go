@@ -312,6 +312,72 @@ func TestDispatchRmBulkConfirmationShowsAllIDs(t *testing.T) {
 	}
 }
 
+func TestDispatchClearCompletedWithForce(t *testing.T) {
+	path := tempStore(t)
+	for _, text := range []string{"done task", "pending task"} {
+		if err := dispatch("add", []string{text}, path); err != nil {
+			t.Fatalf("setup add failed: %v", err)
+		}
+	}
+	if err := dispatch("done", []string{"1"}, path); err != nil {
+		t.Fatalf("setup done failed: %v", err)
+	}
+
+	if err := dispatch("clear-completed", []string{"--force"}, path); err != nil {
+		t.Fatalf("dispatch clear-completed returned error: %v", err)
+	}
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 1 || todos[0].ID != 2 {
+		t.Errorf("expected only the pending todo to remain, got %+v", todos)
+	}
+}
+
+func TestDispatchClearCompletedAbort(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"done task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("done", []string{"1"}, path); err != nil {
+		t.Fatalf("setup done failed: %v", err)
+	}
+
+	withStdin(t, "n\n", func() {
+		captureStdout(t, func() {
+			if err := dispatch("clear-completed", nil, path); err != nil {
+				t.Fatalf("dispatch clear-completed returned error: %v", err)
+			}
+		})
+	})
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 1 {
+		t.Errorf("expected todo to survive an aborted clear, got %d todos", len(todos))
+	}
+}
+
+func TestDispatchClearCompletedNoneCompleted(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"pending task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	out := captureStdout(t, func() {
+		if err := dispatch("clear-completed", nil, path); err != nil {
+			t.Fatalf("dispatch clear-completed returned error: %v", err)
+		}
+	})
+	if !strings.Contains(out, "no completed") {
+		t.Errorf("expected 'no completed' message, got %q", out)
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
