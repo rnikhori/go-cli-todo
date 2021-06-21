@@ -21,7 +21,8 @@ commands:
   edit <id> <text>                          change a todo's text
   done <id> [id...]                         mark one or more todos as done
   rm [--force] <id> [id...]                 remove one or more todos (prompts unless --force)
-  clear-completed [--force]                 remove all completed todos (prompts unless --force)`)
+  clear-completed [--force]                 remove all completed todos (prompts unless --force)
+  undo                                      undo the last add, done, edit, rm, or clear-completed`)
 }
 
 func run() error {
@@ -47,6 +48,12 @@ func run() error {
 }
 
 func dispatch(cmd string, args []string, path string) error {
+	if mutatingCommands[cmd] {
+		if err := saveUndoSnapshot(path); err != nil {
+			return err
+		}
+	}
+
 	switch cmd {
 	case "add":
 		addFs := flag.NewFlagSet("add", flag.ContinueOnError)
@@ -280,6 +287,22 @@ func dispatch(cmd string, args []string, path string) error {
 			return err
 		}
 		fmt.Printf("cleared %d completed todo(s)\n", len(completed))
+
+	case "undo":
+		if !hasUndoSnapshot(path) {
+			return fmt.Errorf("nothing to undo")
+		}
+		snapshot, err := loadTodos(undoPath(path))
+		if err != nil {
+			return err
+		}
+		if err := saveTodos(path, snapshot); err != nil {
+			return err
+		}
+		if err := os.Remove(undoPath(path)); err != nil {
+			return err
+		}
+		fmt.Println("undo: restored previous state")
 
 	default:
 		usage()
