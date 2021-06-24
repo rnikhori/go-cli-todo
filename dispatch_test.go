@@ -378,6 +378,80 @@ func TestDispatchClearCompletedNoneCompleted(t *testing.T) {
 	}
 }
 
+func TestDispatchUndoRestoresAfterRm(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task one"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("add", []string{"task two"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("rm", []string{"--force", "1"}, path); err != nil {
+		t.Fatalf("setup rm failed: %v", err)
+	}
+
+	if err := dispatch("undo", nil, path); err != nil {
+		t.Fatalf("dispatch undo returned error: %v", err)
+	}
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 2 {
+		t.Fatalf("expected 2 todos after undo, got %d", len(todos))
+	}
+}
+
+func TestDispatchUndoIsSingleStep(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("rm", []string{"--force", "1"}, path); err != nil {
+		t.Fatalf("setup rm failed: %v", err)
+	}
+
+	if err := dispatch("undo", nil, path); err != nil {
+		t.Fatalf("first undo returned error: %v", err)
+	}
+	if err := dispatch("undo", nil, path); err == nil {
+		t.Fatal("expected second consecutive undo to fail with nothing to undo")
+	}
+}
+
+func TestDispatchUndoWithNoHistory(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("undo", nil, path); err == nil {
+		t.Fatal("expected undo with no history to return an error")
+	}
+}
+
+func TestDispatchUndoRestoresAfterClearCompleted(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+	if err := dispatch("done", []string{"1"}, path); err != nil {
+		t.Fatalf("setup done failed: %v", err)
+	}
+	if err := dispatch("clear-completed", []string{"--force"}, path); err != nil {
+		t.Fatalf("setup clear-completed failed: %v", err)
+	}
+
+	if err := dispatch("undo", nil, path); err != nil {
+		t.Fatalf("dispatch undo returned error: %v", err)
+	}
+
+	todos, err := loadTodos(path)
+	if err != nil {
+		t.Fatalf("loadTodos returned error: %v", err)
+	}
+	if len(todos) != 1 {
+		t.Fatalf("expected 1 todo restored after undo, got %d", len(todos))
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
