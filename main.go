@@ -22,7 +22,8 @@ commands:
   done <id> [id...]                         mark one or more todos as done
   rm [--force] <id> [id...]                 remove one or more todos (prompts unless --force)
   clear-completed [--force]                 remove all completed todos (prompts unless --force)
-  undo                                      undo the last add, done, edit, rm, or clear-completed`)
+  undo                                      undo the last add, done, edit, rm, or clear-completed
+  stats                                     show counts by status and priority`)
 }
 
 func run() error {
@@ -287,6 +288,21 @@ func dispatch(cmd string, args []string, path string) error {
 			return err
 		}
 		fmt.Printf("cleared %d completed todo(s)\n", len(completed))
+
+	case "stats":
+		todos, err := loadTodos(path)
+		if err != nil {
+			return err
+		}
+		s := computeStats(todos, time.Now())
+		fmt.Printf("total:   %d\n", s.Total)
+		fmt.Printf("done:    %d\n", s.Done)
+		fmt.Printf("pending: %d\n", s.Pending)
+		fmt.Printf("overdue: %d\n", s.Overdue)
+		fmt.Println("by priority:")
+		fmt.Printf("  high:   %d\n", s.ByPriority[PriorityHigh])
+		fmt.Printf("  medium: %d\n", s.ByPriority[PriorityMedium])
+		fmt.Printf("  low:    %d\n", s.ByPriority[PriorityLow])
 
 	case "undo":
 		if !hasUndoSnapshot(path) {
