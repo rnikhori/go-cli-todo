@@ -23,7 +23,8 @@ commands:
   rm [--force] <id> [id...]                 remove one or more todos (prompts unless --force)
   clear-completed [--force]                 remove all completed todos (prompts unless --force)
   undo                                      undo the last add, done, edit, rm, or clear-completed
-  stats                                     show counts by status and priority`)
+  stats                                     show counts by status and priority
+  export <file.csv>                         export all todos to a CSV file`)
 }
 
 func run() error {
@@ -288,6 +289,19 @@ func dispatch(cmd string, args []string, path string) error {
 			return err
 		}
 		fmt.Printf("cleared %d completed todo(s)\n", len(completed))
+
+	case "export":
+		if len(args) != 1 {
+			return fmt.Errorf("export requires a file path")
+		}
+		todos, err := loadTodos(path)
+		if err != nil {
+			return err
+		}
+		if err := exportCSV(args[0], todos); err != nil {
+			return err
+		}
+		fmt.Printf("exported %d todo(s) to %s\n", len(todos), args[0])
 
 	case "stats":
 		todos, err := loadTodos(path)
