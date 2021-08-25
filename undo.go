@@ -12,6 +12,7 @@ var mutatingCommands = map[string]bool{
 	"edit":            true,
 	"rm":              true,
 	"clear-completed": true,
+	"import":          true,
 }
 
 func saveUndoSnapshot(path string) error {

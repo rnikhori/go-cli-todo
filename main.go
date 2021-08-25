@@ -24,7 +24,8 @@ commands:
   clear-completed [--force]                 remove all completed todos (prompts unless --force)
   undo                                      undo the last add, done, edit, rm, or clear-completed
   stats                                     show counts by status and priority
-  export <file.csv>                         export all todos to a CSV file`)
+  export <file.csv>                         export all todos to a CSV file
+  import <file.csv>                         import todos from a CSV file (merged, new ids assigned)`)
 }
 
 func run() error {
@@ -302,6 +303,29 @@ func dispatch(cmd string, args []string, path string) error {
 			return err
 		}
 		fmt.Printf("exported %d todo(s) to %s\n", len(todos), args[0])
+
+	case "import":
+		if len(args) != 1 {
+			return fmt.Errorf("import requires a file path")
+		}
+		imported, err := importCSV(args[0])
+		if err != nil {
+			return err
+		}
+		todos, err := loadTodos(path)
+		if err != nil {
+			return err
+		}
+		id := nextID(todos)
+		for i := range imported {
+			imported[i].ID = id
+			id++
+		}
+		todos = append(todos, imported...)
+		if err := saveTodos(path, todos); err != nil {
+			return err
+		}
+		fmt.Printf("imported %d todo(s) from %s\n", len(imported), args[0])
 
 	case "stats":
 		todos, err := loadTodos(path)
