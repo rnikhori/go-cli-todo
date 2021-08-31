@@ -33,13 +33,13 @@ func run() error {
 	fs.Usage = usage
 	storeFlag := fs.String("store", "", "path to the todo storage file")
 	if err := fs.Parse(os.Args[1:]); err != nil {
-		return err
+		return usageErrorf("%w", err)
 	}
 
 	rest := fs.Args()
 	if len(rest) < 1 {
 		usage()
-		return fmt.Errorf("no command given")
+		return usageErrorf("no command given")
 	}
 
 	path, err := resolveStorePath(*storeFlag)
@@ -65,11 +65,11 @@ func dispatch(cmd string, args []string, path string) error {
 		var tags stringList
 		addFs.Var(&tags, "tag", "tag to attach to the todo (repeatable)")
 		if err := addFs.Parse(args); err != nil {
-			return err
+			return usageErrorf("%w", err)
 		}
 		textArgs := addFs.Args()
 		if len(textArgs) == 0 {
-			return fmt.Errorf("add requires text")
+			return usageErrorf("add requires text")
 		}
 		priority, err := ParsePriority(*priorityStr)
 		if err != nil {
@@ -105,7 +105,7 @@ func dispatch(cmd string, args []string, path string) error {
 		sortBy := listFs.String("sort", "", "sort by: priority, created, or due")
 		noColor := listFs.Bool("no-color", false, "disable colored output")
 		if err := listFs.Parse(args); err != nil {
-			return err
+			return usageErrorf("%w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
@@ -161,7 +161,7 @@ func dispatch(cmd string, args []string, path string) error {
 	case "done":
 		ids, err := parseIDs(args)
 		if err != nil {
-			return fmt.Errorf("done: %w", err)
+			return usageErrorf("done: %w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
@@ -181,11 +181,11 @@ func dispatch(cmd string, args []string, path string) error {
 
 	case "edit":
 		if len(args) < 2 {
-			return fmt.Errorf("edit requires an id and new text")
+			return usageErrorf("edit requires an id and new text")
 		}
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			return fmt.Errorf("invalid id: %s", args[0])
+			return usageErrorf("invalid id: %s", args[0])
 		}
 		text := strings.Join(args[1:], " ")
 		todos, err := loadTodos(path)
@@ -206,11 +206,11 @@ func dispatch(cmd string, args []string, path string) error {
 		rmFs := flag.NewFlagSet("rm", flag.ContinueOnError)
 		force := rmFs.Bool("force", false, "skip the confirmation prompt")
 		if err := rmFs.Parse(args); err != nil {
-			return err
+			return usageErrorf("%w", err)
 		}
 		ids, err := parseIDs(rmFs.Args())
 		if err != nil {
-			return fmt.Errorf("rm: %w", err)
+			return usageErrorf("rm: %w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
@@ -249,7 +249,7 @@ func dispatch(cmd string, args []string, path string) error {
 		clearFs := flag.NewFlagSet("clear-completed", flag.ContinueOnError)
 		force := clearFs.Bool("force", false, "skip the confirmation prompt")
 		if err := clearFs.Parse(args); err != nil {
-			return err
+			return usageErrorf("%w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
@@ -293,7 +293,7 @@ func dispatch(cmd string, args []string, path string) error {
 
 	case "export":
 		if len(args) != 1 {
-			return fmt.Errorf("export requires a file path")
+			return usageErrorf("export requires a file path")
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
@@ -306,7 +306,7 @@ func dispatch(cmd string, args []string, path string) error {
 
 	case "import":
 		if len(args) != 1 {
-			return fmt.Errorf("import requires a file path")
+			return usageErrorf("import requires a file path")
 		}
 		imported, err := importCSV(args[0])
 		if err != nil {
@@ -360,15 +360,16 @@ func dispatch(cmd string, args []string, path string) error {
 
 	default:
 		usage()
-		return fmt.Errorf("unknown command: %s", cmd)
+		return usageErrorf("unknown command: %s", cmd)
 	}
 
 	return nil
 }
 
 func main() {
-	if err := run(); err != nil {
+	err := run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
 	}
+	os.Exit(exitCodeFor(err))
 }
