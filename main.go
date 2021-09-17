@@ -170,7 +170,7 @@ func dispatch(cmd string, args []string, path string) error {
 		for _, id := range ids {
 			idx := findByID(todos, id)
 			if idx == -1 {
-				return fmt.Errorf("no todo with id %d", id)
+				return fmt.Errorf("done: no todo with id %d", id)
 			}
 			todos[idx].Done = true
 		}
@@ -185,7 +185,7 @@ func dispatch(cmd string, args []string, path string) error {
 		}
 		id, err := strconv.Atoi(args[0])
 		if err != nil {
-			return usageErrorf("invalid id: %s", args[0])
+			return usageErrorf("edit: invalid id %q", args[0])
 		}
 		text := strings.Join(args[1:], " ")
 		todos, err := loadTodos(path)
@@ -194,7 +194,7 @@ func dispatch(cmd string, args []string, path string) error {
 		}
 		idx := findByID(todos, id)
 		if idx == -1 {
-			return fmt.Errorf("no todo with id %d", id)
+			return fmt.Errorf("edit: no todo with id %d", id)
 		}
 		todos[idx].Text = text
 		if err := saveTodos(path, todos); err != nil {
@@ -220,7 +220,7 @@ func dispatch(cmd string, args []string, path string) error {
 		for _, id := range ids {
 			idx := findByID(todos, id)
 			if idx == -1 {
-				return fmt.Errorf("no todo with id %d", id)
+				return fmt.Errorf("rm: no todo with id %d", id)
 			}
 			toRemove = append(toRemove, todos[idx])
 		}
@@ -300,7 +300,7 @@ func dispatch(cmd string, args []string, path string) error {
 			return err
 		}
 		if err := exportCSV(args[0], todos); err != nil {
-			return err
+			return fmt.Errorf("export: %w", err)
 		}
 		fmt.Printf("exported %d todo(s) to %s\n", len(todos), args[0])
 
@@ -310,7 +310,7 @@ func dispatch(cmd string, args []string, path string) error {
 		}
 		imported, err := importCSV(args[0])
 		if err != nil {
-			return err
+			return fmt.Errorf("import: %w", err)
 		}
 		todos, err := loadTodos(path)
 		if err != nil {
