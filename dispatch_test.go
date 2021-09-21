@@ -452,6 +452,36 @@ func TestDispatchUndoRestoresAfterClearCompleted(t *testing.T) {
 	}
 }
 
+func TestDispatchErrorMessagesAreCommandPrefixed(t *testing.T) {
+	path := tempStore(t)
+	if err := dispatch("add", []string{"task"}, path); err != nil {
+		t.Fatalf("setup add failed: %v", err)
+	}
+
+	cases := []struct {
+		name   string
+		cmd    string
+		args   []string
+		prefix string
+	}{
+		{"done unknown id", "done", []string{"99"}, "done:"},
+		{"edit unknown id", "edit", []string{"99", "text"}, "edit:"},
+		{"edit invalid id", "edit", []string{"abc", "text"}, "edit:"},
+		{"rm unknown id", "rm", []string{"--force", "99"}, "rm:"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := dispatch(c.cmd, c.args, path)
+			if err == nil {
+				t.Fatalf("expected an error for %s %v", c.cmd, c.args)
+			}
+			if !strings.HasPrefix(err.Error(), c.prefix) {
+				t.Errorf("error %q does not start with %q", err.Error(), c.prefix)
+			}
+		})
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
