@@ -61,6 +61,38 @@ go run . add --due 2026-01-01 "file taxes"
 go run . list
 ```
 
+### list
+
+```sh
+go run . list [--tag t] [--search text] [--sort priority|created|due] [--no-color]
+```
+
+- `--tag` shows only todos carrying the given tag.
+- `--search` shows only todos whose text contains the given substring
+  (case-insensitive).
+- `--sort` orders the output by priority (high first), creation time
+  (oldest first), or due date (soonest first, with undated todos last).
+- `--no-color` disables ANSI colors; colors are also disabled automatically
+  when the `NO_COLOR` environment variable is set or stdout is not a
+  terminal (e.g. when piping output).
+
+```sh
+go run . list --tag home
+go run . list --search "report"
+go run . list --sort priority
+go run . list --sort due --no-color
+```
+
+### Tags
+
+Attach tags to a todo with repeated `--tag` flags on `add`. Tags are stored
+lowercased and deduplicated.
+
+```sh
+go run . add --tag work --tag urgent "ship release"
+go run . list --tag work
+```
+
 ## Basic workflow example
 
 ```sh
