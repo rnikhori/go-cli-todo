@@ -93,6 +93,48 @@ go run . add --tag work --tag urgent "ship release"
 go run . list --tag work
 ```
 
+### done
+
+```sh
+go run . done <id> [id...]
+```
+
+Marks one or more todos as done in a single call.
+
+```sh
+go run . done 1
+go run . done 1 2 3
+```
+
+### rm
+
+```sh
+go run . rm [--force] <id> [id...]
+```
+
+Removes one or more todos. By default this prompts for confirmation and
+lists every todo that would be removed; pass `--force` to skip the prompt
+(useful in scripts).
+
+```sh
+go run . rm 2
+go run . rm --force 2 3 4
+```
+
+### clear-completed
+
+```sh
+go run . clear-completed [--force]
+```
+
+Removes every todo currently marked done. Like `rm`, it prompts with a
+summary unless `--force` is given.
+
+```sh
+go run . clear-completed
+go run . clear-completed --force
+```
+
 ## Basic workflow example
 
 ```sh
