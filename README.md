@@ -135,6 +135,45 @@ go run . clear-completed
 go run . clear-completed --force
 ```
 
+### undo
+
+```sh
+go run . undo
+```
+
+Reverts the most recent `add`, `done`, `edit`, `rm`, `clear-completed`, or
+`import`. Only a single step of history is kept, so running `undo` twice in
+a row (without an intervening mutation) fails with "nothing to undo".
+
+### stats
+
+```sh
+go run . stats
+```
+
+Prints counts of total, done, pending, and overdue todos, plus a breakdown
+by priority.
+
+### export / import
+
+```sh
+go run . export todos.csv
+go run . import todos.csv
+```
+
+`export` writes every todo to a CSV file with columns
+`id,text,done,priority,due,tags,created_at`. `import` reads such a file and
+merges its rows into the current store, assigning each a fresh id so it
+never collides with existing todos.
+
+## Exit codes
+
+- `0`: success
+- `1`: the command failed for a reason other than how it was invoked (for
+  example, referencing a todo id that doesn't exist, or an I/O error)
+- `2`: the command was invoked incorrectly (missing arguments, an unknown
+  command, or an invalid flag)
+
 ## Basic workflow example
 
 ```sh
