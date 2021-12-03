@@ -9,11 +9,14 @@ import (
 	"time"
 )
 
+const version = "1.0.0"
+
 func usage() {
-	fmt.Fprintln(os.Stderr, `usage: todo [--store path] <command> [arguments]
+	fmt.Fprintln(os.Stderr, `usage: todo [--store path] [--version] <command> [arguments]
 
 global options:
   --store path   path to the todo storage file (overrides TODO_STORE env var)
+  --version      print the version number and exit
 
 commands:
   add [--priority low|medium|high] [--due YYYY-MM-DD] [--tag t]... <text>   add a new todo
@@ -25,15 +28,22 @@ commands:
   undo                                      undo the last add, done, edit, rm, or clear-completed
   stats                                     show counts by status and priority
   export <file.csv>                         export all todos to a CSV file
-  import <file.csv>                         import todos from a CSV file (merged, new ids assigned)`)
+  import <file.csv>                         import todos from a CSV file (merged, new ids assigned)
+  version                                   print the version number`)
 }
 
 func run() error {
 	fs := flag.NewFlagSet("todo", flag.ContinueOnError)
 	fs.Usage = usage
 	storeFlag := fs.String("store", "", "path to the todo storage file")
+	versionFlag := fs.Bool("version", false, "print the version number and exit")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		return usageErrorf("%w", err)
+	}
+
+	if *versionFlag {
+		fmt.Println(version)
+		return nil
 	}
 
 	rest := fs.Args()
@@ -341,6 +351,9 @@ func dispatch(cmd string, args []string, path string) error {
 		fmt.Printf("  high:   %d\n", s.ByPriority[PriorityHigh])
 		fmt.Printf("  medium: %d\n", s.ByPriority[PriorityMedium])
 		fmt.Printf("  low:    %d\n", s.ByPriority[PriorityLow])
+
+	case "version":
+		fmt.Println(version)
 
 	case "undo":
 		if !hasUndoSnapshot(path) {
