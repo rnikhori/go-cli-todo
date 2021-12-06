@@ -482,6 +482,18 @@ func TestDispatchErrorMessagesAreCommandPrefixed(t *testing.T) {
 	}
 }
 
+func TestDispatchVersionPrintsVersion(t *testing.T) {
+	path := tempStore(t)
+	out := captureStdout(t, func() {
+		if err := dispatch("version", nil, path); err != nil {
+			t.Fatalf("dispatch version returned error: %v", err)
+		}
+	})
+	if strings.TrimSpace(out) != version {
+		t.Errorf("version output = %q, want %q", out, version)
+	}
+}
+
 func TestDispatchUnknownCommand(t *testing.T) {
 	path := tempStore(t)
 	if err := dispatch("bogus", nil, path); err == nil {
