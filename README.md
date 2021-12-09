@@ -166,6 +166,15 @@ go run . import todos.csv
 merges its rows into the current store, assigning each a fresh id so it
 never collides with existing todos.
 
+### version
+
+```sh
+go run . version
+go run . --version
+```
+
+Prints the current version number.
+
 ## Exit codes
 
 - `0`: success

@@ -1,3 +1,7 @@
+// Command todo is a stdlib-only CLI todo list manager. It persists todos as
+// JSON (by default at ~/.go-cli-todo.json, overridable via --store or
+// TODO_STORE) and dispatches each subcommand from dispatch in this file;
+// run `todo` with no arguments, or see README.md, for the full command list.
 package main
 
 import (

@@ -9,9 +9,9 @@ import (
 )
 
 type Todo struct {
-	ID        int       `json:"id"`
-	Text      string    `json:"text"`
-	Done      bool      `json:"done"`
+	ID        int        `json:"id"`
+	Text      string     `json:"text"`
+	Done      bool       `json:"done"`
 	Priority  Priority   `json:"priority,omitempty"`
 	CreatedAt time.Time  `json:"created_at,omitempty"`
 	Due       *time.Time `json:"due,omitempty"`
